@@ -15,10 +15,11 @@ import logging
 
 
 class DataLoaders:
-    def __init__(self, dataset_name, batch_size_train, batch_size_test):
+    def __init__(self, dataset_name, batch_size_train, batch_size_test, image_size=256):
         self.dataset_name = dataset_name
         self.batch_size_train = batch_size_train
         self.batch_size_test = batch_size_test
+        self.image_size = int(image_size)
 
     def load_data(self):
 
@@ -64,7 +65,7 @@ class DataLoaders:
                 v2.ToTensor(),         # Convert images to PyTorch tensor
             ])
 
-            test_dir = './data/celebahq/test/'
+            test_dir = '../data/celebahq/test/'
             test_dataset = CelebAHQDataset(
                 test_dir, batchsize=self.batch_size_test, transform=transform)
             train_loader = None
@@ -78,15 +79,15 @@ class DataLoaders:
         elif self.dataset_name == 'afhq_cat':
             # transform should include a linear transform 2x - 1
             transform = v2.Compose([
-                v2.Resize((256, 256)),
+                v2.Resize((self.image_size, self.image_size), antialias=True),
                 v2.ToTensor(),
                 v2.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
             ])
 
             # transform = False
-            img_dir_test = '.data/afhq_cat/test/cat/'
-            img_dir_val = '.data/afhq_cat/val/cat/'
-            img_dir_train = '.data/afhq_cat/train/cat/'
+            img_dir_test = './data/afhq_cat/test/cat/'
+            img_dir_val = './data/afhq_cat/val/cat/'
+            img_dir_train = './data/afhq_cat/train/cat/'
             test_dataset = AFHQDataset(
                 img_dir_test, batchsize=self.batch_size_test, transform=transform)
             val_dataset = AFHQDataset(

@@ -73,7 +73,8 @@ def main():
         args.batch_size = args.batch_size_train
         print('Training...')
         data_loaders = DataLoaders(
-            args.dataset, args.batch_size_train, args.batch_size_train).load_data()
+            args.dataset, args.batch_size_train, args.batch_size_train, image_size=args.dim_image).load_data()
+        
         if args.model == "ot":
             generative_method = FLOW_MATCHING(model, device, args)
         elif args.model == "gradient_step":
@@ -93,6 +94,9 @@ def main():
             load_model(args.model, model, state, download=False,
                        checkpoint_path=model_path, dataset=None,  device=device)
             model.eval()
+            for p in model.parameters():
+                p.requires_grad_(False)
+
 
         elif args.model == "rectified":
             model_path = args.root + 'model/{}/{}/model_final.pth'.format(
@@ -100,18 +104,23 @@ def main():
             load_model(args.model, model, state, download=False,
                        checkpoint_path=model_path, dataset=None, device=device)
             model.eval()
+            for p in model.parameters():
+                p.requires_grad_(False)
 
         elif args.model == "diffusion":
             model.eval()
+            for p in model.parameters():
+                p.requires_grad_(False)
 
         if args.model == "gradient_step":
             generative_method = GRADIENT_STEP_DENOISER(model, device, args)
         else:
+            print("using flow matching model")
             generative_method = FLOW_MATCHING(model, device, args)
 
         if args.compute_metrics:
             print('Computing metrics...')
-            data_loaders = DataLoaders(args.dataset, 5000, 5000).load_data()
+            data_loaders = DataLoaders(args.dataset, 5000, 5000, image_size=args.dim_image).load_data()
             metric = ComputeMetric(
                 data_loaders, generative_method, device, args)
             metric.compute_metrics(5000)
@@ -152,17 +161,20 @@ def main():
 
         elif args.problem == "superresolution":
             if args.dim_image == 128:
-                print('Superresolution with scale factor 2')
+                print('Superresolution of a 128 original img with scale factor 2')
                 sf = 2
             elif args.dim_image == 256:
-                print('Superresolution with scale factor 4')
+                print('Superresolution of a 256 original img with scale factor 4')
+                sf = 4
+            elif args.dim_image == 512:
+                print('Superresolution of a 512 original img with scale factor 4')
                 sf = 4
             if args.noise_type == 'laplace':
                 sigma_noise = 0.3
 
             elif args.noise_type == 'gaussian':
                 sigma_noise = 0.05
-            degradation = Superresolution(sf, args.dim_image)
+            degradation = Superresolution(sf, args.dim_image, device=str(device))
 
         elif args.problem == "gaussian_deblurring_FFT":
             if args.dim_image == 128:
@@ -182,7 +194,10 @@ def main():
             args.problem, args.method))
         print('sigma_noise', sigma_noise)
         data_loaders = DataLoaders(
-            args.dataset, args.batch_size_ip, args.batch_size_ip).load_data()
+            args.dataset, args.batch_size_ip, args.batch_size_ip, image_size=args.dim_image).load_data()
+        dl = data_loaders[f"{args.eval_split}"]
+        print(f"[sanity] split={args.eval_split}  len(dl)={len(dl)}  len(dataset)={len(dl.dataset)}")
+
         if args.noise_type == 'laplace':
             args.save_path = os.path.join(
                 args.root, 'results_laplace', args.dataset, args.model, args.problem, args.method, args.eval_split)
@@ -208,6 +223,13 @@ def main():
             method = PNP_DIFF(model, device, args)
         else:
             raise ValueError("The method your entered does not exist")
+
+
+        # Peek one batch to confirm shapes match your expectations
+        test_loader = data_loaders['test_loader'] if isinstance(data_loaders, dict) and 'test_loader' in data_loaders else None
+        if test_loader is not None:
+            x, *rest = next(iter(test_loader))
+            print("Batch HR tensor:", tuple(x.shape))  # expect (B, C, 512, 512)
 
         method.run_method(data_loaders, degradation, sigma_noise)
 

@@ -1,0 +1,1 @@
+./data/afhq_cat/val/cat/flickr_cat_000008.jpg

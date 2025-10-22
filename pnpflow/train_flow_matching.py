@@ -30,9 +30,9 @@ from torchvision import transforms
 from torchvision.utils import save_image
 
 
-img_dir_celeba = './data/celeba/img_align_celeba/'
-partition_csv_celeba = './data/celeba/list_eval_partition.csv'
-img_dir_afhq = '.data/afhq_cat/test/cat/'
+img_dir_celeba = '../data/celeba/img_align_celeba/'
+partition_csv_celeba = '../data/celeba/list_eval_partition.csv'
+img_dir_afhq = '../data/afhq_cat/test/cat/'
 
 
 class FLOW_MATCHING(object):

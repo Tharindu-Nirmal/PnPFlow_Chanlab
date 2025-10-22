@@ -91,9 +91,16 @@ class D_FLOW(object):
             z = z.detach().requires_grad_(True)
 
             # start the gradient descent
+            # optim_img = torch.optim.LBFGS(
+            #     [z], max_iter=self.args.LBFGS_iter, history_size=100, line_search_fn='strong_wolfe')
+            # d = z.shape[1] * z.shape[2] * z.shape[3]
             optim_img = torch.optim.LBFGS(
-                [z], max_iter=self.args.LBFGS_iter, history_size=100, line_search_fn='strong_wolfe')
-            d = z.shape[1] * z.shape[2] * z.shape[3]
+                [z],
+                lr=1.0,
+                max_iter=min(10, getattr(self.args, "lbfgs_max_iter", 10)),
+                history_size=min(5, getattr(self.args, "lbfgs_history", 5)),  # <—
+                line_search_fn='strong_wolfe'
+            )
 
             if self.args.compute_time:
                 torch.cuda.synchronize()
